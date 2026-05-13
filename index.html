@@ -1,0 +1,936 @@
+<!-- ================================================================
+     DOCTYPE — memberitahu browser ini adalah dokumen HTML5 modern
+================================================================ -->
+<!DOCTYPE html>
+
+<!-- lang="id" = bahasa halaman adalah Indonesia, berguna untuk screen reader & SEO -->
+<html lang="id">
+<head>
+
+<!-- charset UTF-8: mendukung semua karakter termasuk emoji & huruf khusus -->
+<meta charset="UTF-8">
+
+<!-- viewport: agar halaman menyesuaikan lebar layar HP, tidak zoom-out otomatis -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Kalkulator BB</title>
+
+<!-- Google Fonts: mengambil 2 font dari internet
+     - Space Grotesk : font utama (berat 400–700)
+     - DM Mono       : font angka/kode (berat 400–500)
+     display=swap    : tampilkan font sistem dulu sambil menunggu font dimuat -->
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ================================================================
+   :root — variabel CSS global (seperti "konstanta" di JavaScript)
+   Ditulis sekali di sini, dipakai di mana saja dengan var(--nama)
+   Keuntungan: ubah 1 nilai = otomatis berubah di seluruh halaman
+================================================================ */
+:root {
+  /* ── Warna Latar ────────────────────────────────────────── */
+  --bg:      #0b0f1a;   /* latar belakang utama halaman (hitam biru gelap) */
+  --surface: #121929;   /* permukaan sedikit lebih terang dari bg (untuk header/nav) */
+  --card:    #16203a;   /* warna kartu / kotak konten */
+  --border:  #1e2d4a;   /* warna garis tepi (border) utama */
+  --border2: #243558;   /* garis tepi sekunder, sedikit lebih terang */
+
+  /* ── Warna Teks ─────────────────────────────────────────── */
+  --text:    #dde6f5;   /* teks utama (putih kebiruan) */
+  --muted:   #4a6080;   /* teks sekunder / label (abu-abu gelap) */
+  --muted2:  #2a3f60;   /* teks sangat redup, hampir tak terlihat */
+
+  /* ── Warna Aksen (sesuai kategori IMT) ─────────────────── */
+  --blue:    #5b9cf6;   /* BB Kurang → biru */
+  --green:   #4cc9a0;   /* Normal    → hijau */
+  --orange:  #f4a261;   /* Kelebihan → oranye */
+  --red:     #ef4444;   /* Obesitas  → merah */
+
+  /* ── Font ───────────────────────────────────────────────── */
+  --font:    'Space Grotesk', sans-serif;  /* font utama teks biasa */
+  --mono:    'DM Mono', monospace;         /* font angka & kode */
+}
+
+/* ── RESET ───────────────────────────────────────────────────
+   *           = berlaku untuk SEMUA elemen HTML
+   *::before   = elemen semu "sebelum" konten (CSS pseudo-element)
+   *::after    = elemen semu "setelah" konten
+   box-sizing: border-box → lebar/tinggi elemen sudah termasuk padding & border
+                             (default browser tidak menyertakannya, sering bikin bug)
+   margin: 0; padding: 0  → hapus jarak bawaan browser di semua elemen
+─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── BODY ─────────────────────────────────────────────────────
+   Pengaturan dasar seluruh halaman
+─────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font);   /* gunakan variabel font yang sudah didefinisikan di :root */
+  background: var(--bg);      /* warna latar belakang halaman */
+  color: var(--text);         /* warna teks default untuk semua elemen di dalam body */
+  min-height: 100vh;          /* vh = viewport height; 100vh = setinggi layar penuh */
+  overflow-x: hidden;         /* sembunyikan konten yang meluap ke samping (kiri/kanan) */
+}
+
+/* ── SISTEM NAVIGASI 2 HALAMAN ───────────────────────────────
+   Semua elemen .page disembunyikan secara default (display:none)
+   Hanya yang punya class "active" yang ditampilkan (display:block)
+   JavaScript menambah/menghapus class "active" saat tombol nav ditekan
+─────────────────────────────────────────────────────────── */
+.page { display: none; }  /* semua halaman tersembunyi */
+
+/* .page.active = selector yang membaca: "elemen .page yang JUGA punya class .active" */
+.page.active { display: block; animation: pgIn 0.28s ease both; }
+
+/* @keyframes = mendefinisikan animasi bernama "pgIn"
+   from = kondisi awal animasi
+   to   = kondisi akhir animasi
+   opacity: 0→1       = muncul dari transparan ke terlihat
+   translateY(10px)→0 = bergerak dari 10px bawah ke posisi normal (efek "naik") */
+@keyframes pgIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ── WRAPPER ─────────────────────────────────────────────── */
+.wrap { max-width: 480px; margin: 0 auto; padding: 0 0 80px; }
+
+/* ── HEADER ──────────────────────────────────────────────── */
+.hdr {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 18px;
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.hdr-left { display: flex; align-items: center; gap: 10px; }
+.hdr-back {
+  width: 34px; height: 34px; border-radius: 9px;
+  background: var(--card); border: 1px solid var(--border2);
+  color: var(--muted); cursor: pointer; font-size: 16px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.18s;
+}
+.hdr-back:active { background: var(--blue); color: #fff; transform: scale(0.9); }
+.hdr-title { font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: 0.2px; }
+.hdr-sub   { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.hdr-badge {
+  background: var(--card); border: 1px solid var(--border2);
+  border-radius: 8px; padding: 5px 10px;
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  font-family: var(--mono);
+}
+
+/* ── BOTTOM NAV ──────────────────────────────────────────── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 100%; max-width: 480px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex; z-index: 50;
+}
+.nav-btn {
+  flex: 1; padding: 12px 8px 14px;
+  background: transparent; border: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  color: var(--muted); font-family: var(--font);
+  font-size: 10px; font-weight: 600; letter-spacing: 0.5px;
+  transition: color 0.18s;
+}
+.nav-btn .nav-icon { font-size: 20px; transition: transform 0.18s; }
+.nav-btn.active { color: var(--blue); }
+.nav-btn.active .nav-icon { transform: scale(1.1); }
+.nav-btn:active { opacity: 0.7; }
+
+/* ── CONTENT AREA ────────────────────────────────────────── */
+.main { padding: 16px 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+
+/* ── CARD ────────────────────────────────────────────────── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 18px 18px;
+}
+.card-label {
+  font-size: 10px; font-weight: 600; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 14px;
+}
+
+/* ── SLIDER ──────────────────────────────────────────────── */
+.slider-group { display: flex; flex-direction: column; gap: 20px; }
+.slider-item  { display: flex; flex-direction: column; gap: 8px; }
+.slider-header { display: flex; justify-content: space-between; align-items: baseline; }
+.slider-name {
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 1.5px;
+}
+.slider-val {
+  font-family: var(--mono); font-size: 28px; font-weight: 500;
+  color: var(--text); line-height: 1;
+}
+.slider-val span { font-size: 13px; color: var(--green); margin-left: 3px; }
+
+input[type="range"] {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 6px; border-radius: 99px;
+  outline: none; cursor: pointer; background: var(--border2);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #fff; border: 3px solid var(--green);
+  box-shadow: 0 0 10px rgba(76,201,160,0.4); cursor: pointer;
+  transition: transform 0.15s;
+}
+input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.15); }
+input[type="range"]::-moz-range-thumb {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #fff; border: 3px solid var(--green); cursor: pointer;
+}
+/* ── WARNA TRACK SLIDER TERISI ───────────────────────────────
+   Trik CSS: kita gambar gradient 2 warna yang titik pembaginya
+   bergerak mengikuti nilai slider (--v adalah CSS variable yang
+   diperbarui oleh JavaScript setiap kali slider digeser)
+
+   Formula: (nilai - min) / (max - min) × 100%
+   → menghitung berapa persen dari kiri posisi thumb sekarang
+
+   Contoh berat slider (min=1, max=150), nilai saat ini=70:
+   (70 - 1) / (150 - 1) × 100% = 46.3%
+   → kiri 46.3% berwarna hijau, sisanya gelap
+──────────────────────────────────────────────────────────── */
+.berat-slider {
+  background: linear-gradient(
+    to right,                                               /* gradien dari kiri ke kanan */
+    var(--green) 0%,                                        /* mulai hijau dari kiri */
+    var(--green) calc((var(--v) - 1) / (150 - 1) * 100%),  /* hijau sampai posisi thumb */
+    var(--border2) calc((var(--v) - 1) / (150 - 1) * 100%),/* langsung berganti gelap */
+    var(--border2) 100%                                     /* gelap sampai ujung kanan */
+  );
+}
+.tinggi-slider {
+  background: linear-gradient(
+    to right,
+    var(--blue) 0%,
+    var(--blue) calc((var(--v) - 100) / (220 - 100) * 100%),  /* min=100, max=220 */
+    var(--border2) calc((var(--v) - 100) / (220 - 100) * 100%),
+    var(--border2) 100%
+  );
+}
+/* ::-webkit-slider-thumb = gaya khusus untuk titik/thumb pada slider (prefix -webkit- untuk Chrome/Safari) */
+.tinggi-slider::-webkit-slider-thumb { border-color: var(--blue); box-shadow: 0 0 10px rgba(91,156,246,0.4); }
+
+/* ── IMT RESULT CARD ─────────────────────────────────────── */
+/* ── BAR INDIKATOR IMT ───────────────────────────────────────
+   Bar horizontal berwarna 4 zona:
+   0%–23%  = BB Kurang (biru)   → IMT 8–16.5  dari total rentang 8–45
+   23%–46% = Normal    (hijau)  → IMT 16.5–24.8
+   46%–58% = Kelebihan (oranye) → IMT 24.8–29.5
+   58%–100%= Obesitas  (merah)  → IMT 29.5–45
+
+   Rumus konversi batas IMT → persen:
+   (batas - 8) / (45 - 8) × 100
+   Contoh: 16.5 → (16.5-8)/(45-8) × 100 = 23%
+──────────────────────────────────────────────────────────── */
+.imt-bar {
+  height: 12px; border-radius: 99px; position: relative; margin-bottom: 6px;
+  background: linear-gradient(to right,
+    var(--blue)   0% 23%,   /* BB Kurang */
+    var(--green)  23% 46%,  /* Normal */
+    var(--orange) 46% 58%,  /* Kelebihan */
+    var(--red)    58% 100%  /* Obesitas */
+  );
+}
+/* Label angka kecil di atas bar (16.5 / 24.8 / 29.5)
+   position:absolute + top:-18px = melayang 18px di atas bar
+   transform:translateX(-50%)    = geser ke kiri setengah lebar teks agar terpusat */
+.bar-label-inner {
+  position: absolute; top: -18px; transform: translateX(-50%);
+  font-family: var(--mono); font-size: 9px; color: var(--muted); white-space: nowrap;
+}
+.mark-165 { left: 23%; } /* posisi label "16.5" */
+.mark-248 { left: 46%; } /* posisi label "24.8" */
+.mark-295 { left: 58%; } /* posisi label "29.5" */
+.imt-bar-labels {
+  display: flex; justify-content: space-between; padding: 0 2px;
+  font-family: var(--mono); font-size: 10px; color: var(--muted);
+  margin-top: 12px;
+}
+.status-box {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface); border: 1.5px solid var(--border2);
+  border-radius: 14px; padding: 16px 18px;
+  transition: border-color 0.3s;
+  margin-top: 14px;
+}
+.normal-bar {
+  margin-top: 12px; background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 12px; padding: 11px 14px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.selisih-txt {
+  margin-top: 10px; text-align: center; font-size: 13px; font-weight: 600;
+  color: var(--muted);
+}
+
+/* ── SECTION TITLE ───────────────────────────────────────── */
+.section-title {
+  font-size: 11px; font-weight: 600; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--muted); padding: 4px 2px 0;
+}
+
+/* ── RUMUS CARD ──────────────────────────────────────────── */
+.rumus-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 18px;
+}
+.rumus-title {
+  font-size: 10px; font-weight: 600; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 14px;
+}
+.formula-box {
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 12px; padding: 16px; margin-bottom: 14px; text-align: center;
+}
+.formula-main { font-family: var(--mono); font-size: 17px; color: var(--blue); margin-bottom: 6px; }
+.formula-sub  { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.formula-sub b { color: var(--text); }
+.contoh-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.contoh-item {
+  flex: 1; min-width: 100px; background: var(--surface);
+  border: 1px solid var(--border2); border-radius: 10px; padding: 11px 12px;
+}
+.contoh-label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+.contoh-val   { font-family: var(--mono); font-size: 12px; color: var(--text); line-height: 1.6; }
+.contoh-result { color: var(--green); font-size: 15px; font-weight: 600; }
+
+/* ── KATEGORI TABLE ──────────────────────────────────────── */
+.cat-table {
+  display: flex; flex-direction: column;
+  border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+}
+.cat-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 14px; border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+.cat-row:last-child { border-bottom: none; }
+.cat-left  { display: flex; align-items: center; gap: 9px; }
+.cat-dot   { width: 8px; height: 8px; border-radius: 50%; }
+.cat-name  { font-size: 13px; font-weight: 600; }
+.cat-range { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+.row-blue   { border-left: 3px solid var(--blue);   }
+.row-green  { border-left: 3px solid var(--green);  }
+.row-orange { border-left: 3px solid var(--orange); }
+.row-red    { border-left: 3px solid var(--red);    }
+.dot-blue   { background: var(--blue);   }
+.dot-green  { background: var(--green);  }
+.dot-orange { background: var(--orange); }
+.dot-red    { background: var(--red);    }
+.name-blue  { color: var(--blue);   }
+.name-green { color: var(--green);  }
+.name-orange{ color: var(--orange); }
+.name-red   { color: var(--red);    }
+
+/* ── TAB INFO KATEGORI — RADIO CSS MURNI ────────────────────
+   Trik: input radio disembunyikan, label dipakai sebagai tombol.
+   Klik label → radio terpilih → CSS :has() membaca state radio
+   → mengubah tampilan panel yang sesuai.
+   Tidak butuh JavaScript sama sekali untuk fitur ini!
+──────────────────────────────────────────────────────────── */
+.zone-selector { display: none; }  /* sembunyikan radio asli dari tampilan */
+.zone-tabs { display: flex; gap: 7px; flex-wrap: wrap; }
+/* opacity:0 + width:0 + height:0 = radio benar-benar tak terlihat & tak memakan ruang
+   position:absolute agar tidak geser layout elemen lain */
+.zone-tab input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
+.zone-tab label {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 13px; border-radius: 99px;
+  border: 1.5px solid var(--border2); background: var(--surface);
+  font-size: 12px; font-weight: 600; color: var(--muted);
+  cursor: pointer; transition: all 0.18s; user-select: none;
+}
+.zone-tab label:hover { border-color: var(--border); color: var(--text); }
+/* :has() = selector CSS modern "jika di dalamnya ada..."
+   Contoh: .zone-tab:has(#z-under:checked)
+   Artinya: "elemen .zone-tab yang di dalamnya ada #z-under yang sedang checked (terpilih)"
+   → ubah tampilan label-nya menjadi berwarna biru */
+.zone-tab:has(#z-under:checked)  label { border-color: var(--blue);   color: var(--blue);   background: rgba(91,156,246,0.08);  }
+.zone-tab:has(#z-normal:checked) label { border-color: var(--green);  color: var(--green);  background: rgba(76,201,160,0.08);  }
+.zone-tab:has(#z-over:checked)   label { border-color: var(--orange); color: var(--orange); background: rgba(244,162,97,0.08);  }
+.zone-tab:has(#z-obese:checked)  label { border-color: var(--red);    color: var(--red);    background: rgba(239,68,68,0.08);   }
+
+/* Semua panel disembunyikan dulu */
+.zone-panels { margin-top: 14px; }
+.zone-panel  { display: none; border-radius: 14px; padding: 16px; animation: pgIn 0.22s ease; }
+
+/* Selector tilde (~) = "saudara kandung berikutnya"
+   #z-under:checked ~ .zone-panels .panel-under
+   Artinya: "jika #z-under dalam keadaan checked, cari saudara .zone-panels
+             di dalamnya cari .panel-under → tampilkan (display:block)"
+   Ini adalah cara CSS menggantikan JavaScript untuk toggle konten */
+#z-under:checked  ~ .zone-panels .panel-under,
+#z-normal:checked ~ .zone-panels .panel-normal,
+#z-over:checked   ~ .zone-panels .panel-over,
+#z-obese:checked  ~ .zone-panels .panel-obese { display: block; }
+
+.panel-under  { background: rgba(91,156,246,0.07);  border: 1.5px solid rgba(91,156,246,0.2);  }
+.panel-normal { background: rgba(76,201,160,0.07);  border: 1.5px solid rgba(76,201,160,0.2);  }
+.panel-over   { background: rgba(244,162,97,0.07);  border: 1.5px solid rgba(244,162,97,0.2);  }
+.panel-obese  { background: rgba(239,68,68,0.07);   border: 1.5px solid rgba(239,68,68,0.2);   }
+
+.panel-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.panel-icon   { font-size: 26px; }
+.panel-name   { font-size: 18px; font-weight: 700; }
+.panel-range  { font-family: var(--mono); font-size: 11px; opacity: 0.65; margin-top: 2px; }
+.panel-under  .panel-name { color: var(--blue);   }
+.panel-normal .panel-name { color: var(--green);  }
+.panel-over   .panel-name { color: var(--orange); }
+.panel-obese  .panel-name { color: var(--red);    }
+
+.panel-tips { display: flex; flex-direction: column; gap: 8px; }
+.panel-tip  {
+  display: flex; gap: 9px; align-items: flex-start;
+  font-size: 13px; color: var(--text); line-height: 1.5; opacity: 0.85;
+}
+.tip-bullet { flex-shrink: 0; font-size: 15px; }
+
+/* ── REF TABLE ───────────────────────────────────────────── */
+.ref-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ref-table th {
+  text-align: left; padding: 10px 14px;
+  font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px;
+  color: var(--muted); border-bottom: 1px solid var(--border); font-weight: 600;
+}
+.ref-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); font-family: var(--mono); font-size: 13px; }
+.ref-table tr:last-child td { border-bottom: none; }
+.ref-table tr:hover td { background: var(--surface); }
+.td-tinggi { color: var(--text); font-weight: 500; }
+.td-normal { color: var(--green); }
+.td-bmi    { color: var(--muted); font-size: 11px; }
+
+/* ── FOOTER ──────────────────────────────────────────────── */
+footer {
+  text-align: center; padding: 20px 20px 30px;
+  font-size: 11px; color: var(--muted); line-height: 1.7;
+}
+footer strong { color: var(--text); }
+
+/* ── IMT ESTIMATOR (Halaman 2) ───────────────────────────── */
+.est-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 18px;
+}
+.est-title {
+  font-size: 10px; font-weight: 600; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 16px;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     HALAMAN 1 — KALKULATOR
+═══════════════════════════════════════════════════════════════ -->
+<div id="pg1" class="page active">
+<div class="wrap">
+
+  <!-- Header -->
+  <header class="hdr">
+    <div class="hdr-left">
+      <span style="font-size:20px">⚖️</span>
+      <div>
+        <div class="hdr-title">Kalkulator BB</div>
+      </div>
+    </div>
+    <div class="hdr-badge" id="hdrBadge">– IMT</div>
+  </header>
+
+  <div class="main">
+
+    <!-- Slider Input -->
+    <div class="card">
+      <div class="card-label">Masukkan Data Tubuh</div>
+      <div class="slider-group">
+
+        <div class="slider-item">
+          <div class="slider-header">
+            <span class="slider-name">Berat Badan</span>
+            <span class="slider-val" id="berat-display">70<span>kg</span></span>
+          </div>
+          <input type="range" class="berat-slider" id="beratSlider"
+                 min="1" max="150" value="70" step="1" style="--v:70"
+                 oninput="
+                   document.getElementById('berat-display').innerHTML=this.value+'<span>kg</span>';
+                   this.style.setProperty('--v',this.value);
+                   hitungIMT();
+                 ">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px">
+            <span>1 kg</span><span>150 kg</span>
+          </div>
+        </div>
+
+        <div class="slider-item">
+          <div class="slider-header">
+            <span class="slider-name">Tinggi Badan</span>
+            <span class="slider-val" id="tinggi-display">165<span>cm</span></span>
+          </div>
+          <input type="range" class="tinggi-slider" id="tinggiSlider"
+                 min="100" max="220" value="165" step="1" style="--v:165"
+                 oninput="
+                   document.getElementById('tinggi-display').innerHTML=this.value+'<span>cm</span>';
+                   this.style.setProperty('--v',this.value);
+                   hitungIMT();
+                 ">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px">
+            <span>100 cm</span><span>220 cm</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Hasil IMT -->
+    <div class="card">
+      <div class="card-label">Hasil IMT</div>
+
+      <!-- Bar IMT -->
+      <div style="position:relative;margin-bottom:4px;">
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);font-family:var(--mono);margin-bottom:22px">
+          <span style="color:var(--blue)">BB Kurang</span>
+          <span style="color:var(--green)">Normal</span>
+          <span style="color:var(--orange)">Kelebihan</span>
+          <span style="color:var(--red)">Obesitas</span>
+        </div>
+        <div class="imt-bar">
+          <span class="bar-label-inner mark-165">16.5</span>
+          <span class="bar-label-inner mark-248">24.8</span>
+          <span class="bar-label-inner mark-295">29.5</span>
+        </div>
+        <div id="imtNeedle" style="
+          position:absolute; bottom:-4px; left:46%;
+          transform:translateX(-50%);
+          width:14px; height:14px; border-radius:50%;
+          background:#fff; border:3px solid var(--green);
+          box-shadow:0 0 10px rgba(255,255,255,0.4);
+          transition:left 0.4s cubic-bezier(0.4,0,0.2,1),border-color 0.3s;
+        "></div>
+        <div class="imt-bar-labels">
+          <span>8</span><span>16.5</span><span>24.8</span><span>29.5</span><span>45</span>
+        </div>
+      </div>
+
+      <!-- Status box -->
+      <div class="status-box" id="statusBox">
+        <div>
+          <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px">IMT</div>
+          <div id="imtVal" style="font-family:var(--mono);font-size:44px;font-weight:500;color:var(--green);line-height:1;transition:color 0.3s">–</div>
+        </div>
+        <div style="text-align:right">
+          <div id="statusIcon" style="font-size:30px;margin-bottom:4px">📊</div>
+          <div id="statusName" style="font-size:15px;font-weight:700;color:var(--green);transition:color 0.3s">–</div>
+          <div id="statusRange" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:2px">–</div>
+        </div>
+      </div>
+
+      <!-- Berat normal -->
+      <div class="normal-bar">
+        <span style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:600">Berat Normal</span>
+        <span id="bobotNormal" style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--green)">– kg</span>
+      </div>
+
+      <!-- Selisih -->
+      <div class="selisih-txt" id="selisihText">Geser slider untuk melihat hasil</div>
+    </div>
+
+  </div><!-- /main -->
+
+  <footer>
+    <strong>Kalkulator BB</strong> — Indeks Massa Tubuh<br>
+    Hasil bersifat informatif. Konsultasikan dengan dokter jika diperlukan.
+  </footer>
+
+</div><!-- /wrap -->
+</div><!-- /pg1 -->
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     HALAMAN 2 — REFERENSI & INFO
+═══════════════════════════════════════════════════════════════ -->
+<div id="pg2" class="page">
+<div class="wrap">
+
+  <!-- Header -->
+  <header class="hdr">
+    <div class="hdr-left">
+      <span style="font-size:20px">📚</span>
+      <div>
+        <div class="hdr-title">Panduan IMT</div>
+      </div>
+    </div>
+    <div class="hdr-badge">Referensi</div>
+  </header>
+
+  <div class="main">
+
+    <!-- Cara Hitung -->
+    <div class="section-title">📐 Cara Hitung</div>
+    <div class="rumus-card">
+      <div class="rumus-title">Rumus IMT</div>
+      <div class="formula-box">
+        <div class="formula-main">IMT = Berat (kg) ÷ Tinggi² (m)</div>
+        <div class="formula-sub">
+          Tinggi harus dikonversi ke meter terlebih dahulu<br>
+          <b>Contoh: 170 cm → 1.70 m</b>
+        </div>
+      </div>
+      <div class="contoh-row">
+        <div class="contoh-item">
+          <div class="contoh-label">Data</div>
+          <div class="contoh-val">BB: 58 kg<br>TB: 170 cm → 1.70 m</div>
+        </div>
+        <div class="contoh-item">
+          <div class="contoh-label">Hitung</div>
+          <div class="contoh-val">58 ÷ (1.70 × 1.70)<br>= 58 ÷ 2.89</div>
+        </div>
+        <div class="contoh-item">
+          <div class="contoh-label">Hasil</div>
+          <div class="contoh-val">
+            <span class="contoh-result">= 20.1</span><br>
+            <span style="font-size:11px;color:var(--green)">✅ Normal</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kategori IMT -->
+    <div class="section-title">📊 Kategori IMT</div>
+    <div class="cat-table">
+      <div class="cat-row row-blue">
+        <div class="cat-left">
+          <div class="cat-dot dot-blue"></div>
+          <span class="cat-name name-blue">BB Kurang</span>
+        </div>
+        <span class="cat-range">≤ 16.5</span>
+      </div>
+      <div class="cat-row row-green">
+        <div class="cat-left">
+          <div class="cat-dot dot-green"></div>
+          <span class="cat-name name-green">Normal</span>
+        </div>
+        <span class="cat-range">16.6 – 24.8</span>
+      </div>
+      <div class="cat-row row-orange">
+        <div class="cat-left">
+          <div class="cat-dot dot-orange"></div>
+          <span class="cat-name name-orange">Kelebihan Bobot</span>
+        </div>
+        <span class="cat-range">24.9 – 29.5</span>
+      </div>
+      <div class="cat-row row-red">
+        <div class="cat-left">
+          <div class="cat-dot dot-red"></div>
+          <span class="cat-name name-red">Obesitas</span>
+        </div>
+        <span class="cat-range">≥ 29.6</span>
+      </div>
+    </div>
+
+    <!-- Info per Kategori -->
+    <div class="section-title">💡 Info Kategori</div>
+    <div class="est-card">
+      <div class="est-title">Pilih kategori untuk melihat informasi</div>
+
+      <input type="radio" name="zona" id="z-under"  class="zone-selector">
+      <input type="radio" name="zona" id="z-normal" class="zone-selector" checked>
+      <input type="radio" name="zona" id="z-over"   class="zone-selector">
+      <input type="radio" name="zona" id="z-obese"  class="zone-selector">
+
+      <div class="zone-tabs">
+        <div class="zone-tab"><label for="z-under">💧 BB Kurang</label></div>
+        <div class="zone-tab"><label for="z-normal">✅ Normal</label></div>
+        <div class="zone-tab"><label for="z-over">⚠️ Kelebihan</label></div>
+        <div class="zone-tab"><label for="z-obese">🔴 Obesitas</label></div>
+      </div>
+
+      <div class="zone-panels">
+        <div class="zone-panel panel-under">
+          <div class="panel-header">
+            <span class="panel-icon">💧</span>
+            <div><div class="panel-name">BB Kurang</div><div class="panel-range">IMT ≤ 16.5</div></div>
+          </div>
+          <div class="panel-tips">
+            <div class="panel-tip"><span class="tip-bullet">⚡</span> Tubuh kekurangan energi dan nutrisi penting</div>
+            <div class="panel-tip"><span class="tip-bullet">🍽️</span> Tingkatkan asupan kalori dengan makanan bergizi seimbang</div>
+            <div class="panel-tip"><span class="tip-bullet">🏋️</span> Lakukan latihan kekuatan untuk membangun massa otot</div>
+            <div class="panel-tip"><span class="tip-bullet">🩺</span> Konsultasikan ke dokter atau ahli gizi</div>
+          </div>
+        </div>
+        <div class="zone-panel panel-normal">
+          <div class="panel-header">
+            <span class="panel-icon">✅</span>
+            <div><div class="panel-name">Normal</div><div class="panel-range">IMT 16.6 – 24.8</div></div>
+          </div>
+          <div class="panel-tips">
+            <div class="panel-tip"><span class="tip-bullet">🎯</span> Berat badan ideal — pertahankan kondisi ini</div>
+            <div class="panel-tip"><span class="tip-bullet">🥗</span> Jaga pola makan dengan gizi seimbang</div>
+            <div class="panel-tip"><span class="tip-bullet">🏃</span> Olahraga rutin minimal 150 menit per minggu</div>
+            <div class="panel-tip"><span class="tip-bullet">😴</span> Tidur cukup 7–9 jam per malam</div>
+          </div>
+        </div>
+        <div class="zone-panel panel-over">
+          <div class="panel-header">
+            <span class="panel-icon">⚠️</span>
+            <div><div class="panel-name">Kelebihan Bobot</div><div class="panel-range">IMT 24.9 – 29.5</div></div>
+          </div>
+          <div class="panel-tips">
+            <div class="panel-tip"><span class="tip-bullet">⚠️</span> Risiko penyakit jantung dan diabetes meningkat</div>
+            <div class="panel-tip"><span class="tip-bullet">🥦</span> Kurangi makanan tinggi gula, lemak jenuh, dan ultra-proses</div>
+            <div class="panel-tip"><span class="tip-bullet">🚶</span> Mulai aktivitas fisik ringan: jalan kaki 30 menit/hari</div>
+            <div class="panel-tip"><span class="tip-bullet">💧</span> Perbanyak minum air putih, hindari minuman manis</div>
+          </div>
+        </div>
+        <div class="zone-panel panel-obese">
+          <div class="panel-header">
+            <span class="panel-icon">🔴</span>
+            <div><div class="panel-name">Obesitas</div><div class="panel-range">IMT ≥ 29.6</div></div>
+          </div>
+          <div class="panel-tips">
+            <div class="panel-tip"><span class="tip-bullet">🚨</span> Risiko tinggi penyakit kronis (diabetes, hipertensi, jantung)</div>
+            <div class="panel-tip"><span class="tip-bullet">🩺</span> Segera konsultasi dengan dokter untuk program penurunan berat</div>
+            <div class="panel-tip"><span class="tip-bullet">🍱</span> Defisit kalori moderat — jangan diet ekstrem tanpa pengawasan</div>
+            <div class="panel-tip"><span class="tip-bullet">🏊</span> Olahraga rendah dampak: renang, bersepeda, jalan kaki</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabel Referensi -->
+    <!-- <div class="section-title">📋 Referensi Berat Ideal</div>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <table class="ref-table">
+        <thead>
+          <tr>
+            <th>Tinggi</th>
+            <th>Berat Normal</th>
+            <th>IMT</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="td-tinggi">150 cm</td><td class="td-normal">37.4 – 55.8 kg</td><td class="td-bmi">16.6–24.8</td></tr>
+          <tr><td class="td-tinggi">155 cm</td><td class="td-normal">39.9 – 59.6 kg</td><td class="td-bmi">16.6–24.8</td></tr>
+          <tr><td class="td-tinggi">160 cm</td><td class="td-normal">42.5 – 63.5 kg</td><td class="td-bmi">16.6–24.8</td></tr>
+          <tr><td class="td-tinggi">165 cm</td><td class="td-normal">45.2 – 67.5 kg</td><td class="td-bmi">16.6–24.8</td></tr>
+          <tr><td class="td-tinggi">170 cm</td><td class="td-normal">47.9 – 71.6 kg</td><td class="td-bmi">16.6–24.8</td></tr>
+          <tr><td class="td-tinggi">175 cm</td><td class="td-normal">50.8 – 75.9 kg</td><td class="td-bmi">16.6–24.8</td></tr>
+          <tr><td class="td-tinggi">180 cm</td><td class="td-normal">53.8 – 80.4 kg</td><td class="td-bmi">16.6–24.8</td></tr>
+          <tr><td class="td-tinggi">185 cm</td><td class="td-normal">56.8 – 85.0 kg</td><td class="td-bmi">16.6–24.8</td></tr>
+        </tbody>
+      </table>
+    </div> -->
+
+  </div><!-- /main -->
+
+  <footer>
+    <strong>Panduan IMT</strong> — Referensi Indeks Massa Tubuh<br>
+    Data bersifat informatif. Konsultasikan dengan tenaga medis profesional.
+  </footer>
+
+</div><!-- /wrap -->
+</div><!-- /pg2 -->
+
+
+<!-- ── NAVIGASI BAWAH ────────────────────────────────────────
+     <nav> = elemen semantik HTML untuk navigasi
+     position:fixed di CSS = menempel di bawah layar saat scroll
+     onclick="goTo(1)" = saat diklik, panggil fungsi goTo() dengan angka 1 atau 2
+     class="active" = halaman 1 aktif secara default saat halaman dibuka
+──────────────────────────────────────────────────────────── -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nav1" onclick="goTo(1)">
+    <span class="nav-icon">⚖️</span>
+    Kalkulator
+  </button>
+  <button class="nav-btn" id="nav2" onclick="goTo(2)">
+    <span class="nav-icon">📚</span>
+    Panduan
+  </button>
+</nav>
+
+
+<script>
+// ================================================================
+// JAVASCRIPT — Logika interaktif seluruh halaman
+// ================================================================
+
+/* ── FUNGSI NAVIGASI HALAMAN ─────────────────────────────────────
+   Dipanggil saat tombol nav bawah ditekan: goTo(1) atau goTo(2)
+   Parameter n = nomor halaman yang ingin ditampilkan (1 atau 2)
+──────────────────────────────────────────────────────────────── */
+function goTo(n) {
+  // querySelectorAll('.page') = ambil SEMUA elemen dengan class "page" sebagai array
+  // .forEach(p => ...) = jalankan fungsi untuk setiap elemen p yang ditemukan
+  // p.classList.remove('active') = hapus class "active" → halaman disembunyikan
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+
+  // Sama, tapi untuk tombol nav: hapus semua class active dulu
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+  // getElementById('pg' + n) = cari elemen dengan id "pg1" atau "pg2"
+  // classList.add('active') = tambahkan class active → halaman ditampilkan
+  document.getElementById('pg' + n).classList.add('active');
+
+  // Tandai tombol nav yang aktif (untuk ubah warna ikon)
+  document.getElementById('nav' + n).classList.add('active');
+
+  // Scroll ke atas halaman agar konten terlihat dari awal
+  window.scrollTo(0, 0);
+}
+
+/* ── DATA KATEGORI IMT ───────────────────────────────────────────
+   var CATS = array (daftar berurutan) berisi 4 objek { }
+   Setiap objek mewakili satu kategori IMT dengan propertinya:
+     name  = nama kategori (untuk teks di layar)
+     range = teks rentang nilai IMT (hanya untuk tampilan)
+     max   = batas atas nilai IMT kategori ini (untuk logika perbandingan)
+     color = kode warna hex (#rrggbb) untuk UI
+     icon  = emoji yang muncul di panel status
+──────────────────────────────────────────────────────────────── */
+var CATS = [
+  { name:'BB Kurang',       range:'≤ 16.5',      max:16.5,  color:'#5b9cf6', icon:'💧' },
+  { name:'Normal',          range:'16.6 – 24.8', max:24.8,  color:'#4cc9a0', icon:'✅' },
+  { name:'Kelebihan Bobot', range:'24.9 – 29.5', max:29.5,  color:'#f4a261', icon:'⚠️' },
+  { name:'Obesitas',        range:'≥ 29.6',      max:999,   color:'#ef4444', icon:'🔴' },
+  // max:999 di Obesitas = nilai sangat besar sebagai fallback "tak terhingga"
+];
+
+/* ── FUNGSI PENENTU KATEGORI ─────────────────────────────────────
+   getCat(imt) = menerima satu angka (nilai IMT), mengembalikan objek kategori
+   
+   Cara kerja:
+   - Loop (for) dari kategori pertama (i=0) sampai terakhir (i=3)
+   - Setiap iterasi: cek apakah imt ≤ batas atas (max) kategori ini
+   - Jika ya: langsung return (kembalikan) objek kategori itu, berhenti loop
+   - Jika sampai akhir tidak ada yang cocok: kembalikan CATS[3] = Obesitas
+
+   Contoh: getCat(20.1)
+   i=0: 20.1 ≤ 16.5? → TIDAK
+   i=1: 20.1 ≤ 24.8? → YA  → return { name:'Normal', ... }
+──────────────────────────────────────────────────────────────── */
+function getCat(imt) {
+  for (var i = 0; i < CATS.length; i++) if (imt <= CATS[i].max) return CATS[i];
+  return CATS[3]; // fallback: jika IMT sangat besar, kembalikan Obesitas
+}
+
+/* ── FUNGSI UTAMA: HITUNG IMT ────────────────────────────────────
+   Dipanggil setiap kali slider berat atau tinggi digeser (oninput)
+   Alur kerja:
+     1. Baca nilai slider
+     2. Hitung IMT dengan rumus
+     3. Tentukan kategori
+     4. Hitung posisi jarum & rentang normal
+     5. Hitung selisih dari normal
+     6. Tampilkan semua hasil ke layar (update DOM)
+──────────────────────────────────────────────────────────────── */
+function hitungIMT() {
+
+  // ── LANGKAH 1: BACA NILAI SLIDER ───────────────────────────────
+  // document.getElementById('beratSlider') = ambil elemen HTML dengan id tersebut
+  // .value = baca nilai slider saat ini (tipe: string/teks)
+  // parseFloat() = konversi string → angka desimal (mis. "70" → 70)
+  // || 0 = jika hasilnya NaN (bukan angka / kosong), gunakan 0 sebagai default
+  var berat  = parseFloat(document.getElementById('beratSlider').value)  || 0;
+  var tinggi = parseFloat(document.getElementById('tinggiSlider').value) || 0;
+
+  // Jika salah satu nilai masih 0 (belum diisi), hentikan fungsi
+  // !berat = true jika berat adalah 0 atau NaN
+  if (!berat || !tinggi) return;  // return tanpa nilai = keluar dari fungsi
+
+  // ── LANGKAH 2: HITUNG IMT ──────────────────────────────────────
+  // Rumus IMT = Berat (kg) ÷ Tinggi² (meter)
+  // Langkah: tinggi cm → meter dulu (bagi 100), lalu kuadratkan
+  var h   = tinggi / 100;  // konversi cm ke meter. Contoh: 165 / 100 = 1.65 m
+  var imt = berat / (h * h);
+  // Contoh lengkap: berat=58, tinggi=165
+  //   h   = 165 / 100 = 1.65
+  //   imt = 58 / (1.65 × 1.65) = 58 / 2.7225 = 21.3
+
+  // ── LANGKAH 3: TENTUKAN KATEGORI ───────────────────────────────
+  // getCat() = fungsi yang membandingkan imt dengan array CATS
+  // Hasilnya: objek { name, range, max, color, icon } sesuai kategori
+  var cat = getCat(imt);
+
+  // ── LANGKAH 4A: POSISI JARUM DI BAR ────────────────────────────
+  // Bar IMT menampilkan rentang nilai 8–45 (bukan 0–100)
+  // Kita perlu mengkonversi nilai IMT ke posisi persen (%) di bar
+  //
+  // Rumus: (nilai - min) / (max - min) × 100
+  // Contoh: imt=21.3, min=8, max=45
+  //   (21.3 - 8) / (45 - 8) × 100 = 13.3 / 37 × 100 = 35.9%
+  //
+  // Math.min(99, ...) = batasi maksimum 99% (agar jarum tidak keluar kanan)
+  // Math.max(1,  ...) = batasi minimum  1% (agar jarum tidak keluar kiri)
+  var pct = Math.max(1, Math.min(99, ((imt - 8) / (45 - 8)) * 100));
+
+  // ── LANGKAH 4B: RENTANG BERAT NORMAL ───────────────────────────
+  // Balik rumus IMT: Berat = IMT × Tinggi²
+  // Berat minimum normal = IMT_batas_bawah_normal × h²
+  // Berat maksimum normal = IMT_batas_atas_normal × h²
+  // Batas normal: 16.6 (min) sampai 24.8 (max)
+  // .toFixed(1) = bulatkan ke 1 angka desimal, hasilnya string "47.9"
+  var minKg = (16.6 * h * h).toFixed(1);  // contoh h=1.65: 16.6×2.7225 = 45.2 kg
+  var maxKg = (24.8 * h * h).toFixed(1);  // contoh h=1.65: 24.8×2.7225 = 67.5 kg
+
+  // ── LANGKAH 5: HITUNG SELISIH DARI NORMAL ──────────────────────
+  // parseFloat(minKg) = konversi string "45.2" kembali ke angka 45.2 untuk perbandingan
+  var selisih = '';
+  if (berat < parseFloat(minKg)) {
+    // Berat di bawah minimum normal: hitung kekurangannya
+    // (parseFloat(minKg) - berat).toFixed(1) = selisih dengan 1 desimal
+    selisih = '↑ Perlu tambah '  + (parseFloat(minKg)-berat).toFixed(1) + ' kg untuk mencapai normal';
+  } else if (berat > parseFloat(maxKg)) {
+    // Berat di atas maksimum normal: hitung kelebihannya
+    selisih = '↓ Perlu kurangi ' + (berat-parseFloat(maxKg)).toFixed(1) + ' kg untuk mencapai normal';
+  } else {
+    // Berat dalam rentang normal
+    selisih = '✓ Berat badan ideal!';
+  }
+
+  // ── LANGKAH 6: UPDATE TAMPILAN (DOM MANIPULATION) ──────────────
+  // DOM = Document Object Model = representasi HTML di memori browser
+  // .textContent = ubah teks dalam elemen
+  // .style.color = ubah warna teks elemen via CSS inline
+  // imt.toFixed(1) = tampilkan 1 desimal, mis: 21.3 (bukan 21.30012...)
+  document.getElementById('imtVal').textContent       = imt.toFixed(1);       // angka IMT besar
+  document.getElementById('imtVal').style.color       = cat.color;             // warna sesuai kategori
+  document.getElementById('statusName').textContent   = cat.name;              // nama kategori
+  document.getElementById('statusName').style.color   = cat.color;
+  document.getElementById('statusIcon').textContent   = cat.icon;              // emoji kategori
+  document.getElementById('statusRange').textContent  = cat.range;             // teks rentang
+  document.getElementById('bobotNormal').textContent  = minKg + ' – ' + maxKg + ' kg'; // rentang berat
+  document.getElementById('imtNeedle').style.left     = pct + '%';             // geser jarum
+  document.getElementById('imtNeedle').style.borderColor = cat.color;          // warna tepi jarum
+  document.getElementById('selisihText').textContent  = selisih;               // teks selisih
+
+  // Warna teks selisih: operator ternary (kondisi ? jika_true : jika_false)
+  // Jika berat dalam rentang normal → hijau, selain itu → warna kategori
+  document.getElementById('selisihText').style.color  =
+    berat >= parseFloat(minKg) && berat <= parseFloat(maxKg) ? '#4cc9a0' : cat.color;
+
+  // cat.color + '60' = tambahkan 2 karakter hex di akhir = opacity 38% (transparan)
+  // Contoh: '#4cc9a0' + '60' = '#4cc9a060'
+  document.getElementById('statusBox').style.borderColor = cat.color + '60';
+
+  // ── Badge di header (menampilkan nilai IMT live) ────────────────
+  document.getElementById('hdrBadge').textContent = imt.toFixed(1) + ' IMT';
+  document.getElementById('hdrBadge').style.color = cat.color;
+  document.getElementById('hdrBadge').style.borderColor = cat.color + '50'; // opacity 31%
+}
+
+// ── INISIALISASI ────────────────────────────────────────────────
+// Panggil hitungIMT() satu kali saat halaman selesai dimuat
+// agar nilai awal slider (berat=70, tinggi=165) langsung terhitung & tampil
+hitungIMT();
+</script>
+</body>
+</html>
